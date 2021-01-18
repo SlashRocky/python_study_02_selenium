@@ -5,32 +5,54 @@ import os
 import signal
 import sys
 
+from logging import getLogger, Formatter, Logger
 from selenium import webdriver
 from time import sleep
 
 import pandas as pd
 
 
+class LogLogger(object):
+
+    def __init__(self, logger_output_path):
+
+        self.logger = getLogger(self.__class__.__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        handler_format = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+        file_handler = logging.FileHandler(logger_output_path)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(handler_format)
+        self.logger.addHandler(file_handler)
+
+    def print_debug_log(self, text):
+        self.logger.debug(text)
+
+    def print_info_log(self, text):
+        self.logger.info(text)
+
+    def print_warning_log(self, text):
+        self.logger.warning(text)
+
+    def print_error_log(self, text):
+        self.logger.error(text)
+
+    def print_critical_log(self, text):
+        self.logger.critical(text)
+
+    def print_exception_log(self, text):
+        self.logger.exception(text)
+
+
 class Scraping(object):
     def __init__(self):
 
-        # ログの出力名を設定
-        self.logger = logging.getLogger('LoggingMynavi')
+        self.log_logger = LogLogger('./logs/mynavi.log')
 
-        # ロギングレベルの設定 （DEBUG以上に設定）
-        self.logger.setLevel(10)
-
-        # ログのファイル出力先を設定
-        self.fh = logging.FileHandler('./logs/mynavi.log')
-        self.logger.addHandler(self.fh)
-
-        # ログの出力形式の設定
-        self.formatter = logging.Formatter('%(asctime)s:%(lineno)d:%(levelname)s:%(message)s')
-        self.fh.setFormatter(self.formatter)
-
-        self.logger.log(20, 'start scraping')
+        self.log_logger.print_info_log('start scraping')
         print('開始します。')
-        self.logger.log(20, 'booting...')
+        self.log_logger.print_info_log('booting...')
         print('\n起動しています・・・')
 
         # 全ての「会社名」を格納するリスト：company_names
@@ -44,7 +66,7 @@ class Scraping(object):
     def access_site(self):
         self.browser.get('https://tenshoku.mynavi.jp/search/')
 
-        self.logger.log(20, 'loading...')
+        self.log_logger.print_info_log('loading...')
         print('\nデータをロード中です・・・')
 
         # 読み込みを待つために５秒間処理を停止
@@ -58,7 +80,7 @@ class Scraping(object):
 
     def search_by_keyword(self):
 
-        self.logger.log(20, 'ready')
+        self.log_logger.print_info_log('ready')
         print('\n準備が整いました！')
 
         while True:
@@ -67,7 +89,7 @@ class Scraping(object):
                 self.elem_keyword_box = self.browser.find_element_by_name('srFreeSearchKeyword')
                 self.elem_keyword_box.clear()
 
-                self.logger.log(20, 'enter the keywords you are interested in...')
+                self.log_logger.print_info_log('enter the keywords you are interested in...')
                 self.elem_keyword = input("\n気になるキーワードを入力してください！\n\n")
 
                 self.elem_keyword_box.send_keys(self.elem_keyword)
@@ -81,30 +103,30 @@ class Scraping(object):
                 # 何件あるかカウント
                 self.number_of_cases = int(self.browser.find_element_by_class_name('js__searchRecruit--count').text)
 
-                self.logger.log(20, f'{self.number_of_cases} jobs were found')
+                self.log_logger.print_info_log(f'{self.number_of_cases} jobs were found')
                 print(f'\n{self.number_of_cases}件の求人情報がヒットしました。')
 
                 # ページ数カウント
                 if self.number_of_cases == 0:
-                    self.logger.log(20, f'There are no jobs available for {self.elem_keyword}')
+                    self.log_logger.print_info_log(f'There are no jobs available for {self.elem_keyword}')
                     print(f'{self.elem_keyword}の求人情報はありません。\n')
 
                 elif self.number_of_cases <= 50:
                     self.number_of_pages = 1
 
-                    self.logger.log(20, f'There are {self.number_of_pages} pages')
+                    self.log_logger.print_info_log(f'There are {self.number_of_pages} pages')
                     print(f'{self.number_of_pages}ページあります。\n')
 
                 else:
                     self.number_of_pages = math.ceil(self.number_of_cases / 50)
 
-                    self.logger.log(20, f'There are {self.number_of_pages} pages')
+                    self.log_logger.print_info_log(f'There are {self.number_of_pages} pages')
                     print(f'{self.number_of_pages}ページあります。\n')
 
                 if self.number_of_cases != 0:
                     break
                 else:
-                    self.logger.log(20, 'Try searching again with a different keyword.')
+                    self.log_logger.print_info_log('Try searching again with a different keyword.')
                     print('\n別のキーワードで検索しなおしてね。')
             except:
                 break
@@ -171,7 +193,7 @@ class Scraping(object):
                 self.contents.append(_recommend_application_details)
         except Exception as e:
             tb = sys.exc_info()[2]
-            self.logger.exception('Raise Exception: %s', e.with_traceback(tb))
+            self.log_logger.print_exception_log(e.with_traceback(tb))
 
         try:
             # クラス名「cassetteRecruit__main」が付与されている場合
@@ -195,7 +217,7 @@ class Scraping(object):
                 self.contents.append(_application_details)
         except Exception as e:
             tb = sys.exc_info()[2]
-            self.logger.exception('Raise Exception: %s', e.with_traceback(tb))
+            self.log_logger.print_exception_log(e.with_traceback(tb))
 
         try:
             # クラス名「cassetteRecruit__mainM」が付与されている場合
@@ -219,7 +241,7 @@ class Scraping(object):
                 self.contents.append(_m_application_details)
         except Exception as e:
             tb = sys.exc_info()[2]
-            self.logger.exception('Raise Exception: %s', e.with_traceback(tb))
+            self.log_logger.print_exception_log(e.with_traceback(tb))
 
         try:
             # クラス名「cassetteRecruit__mainL」が付与されている場合
@@ -243,7 +265,7 @@ class Scraping(object):
                 self.contents.append(_l_application_details)
         except Exception as e:
             tb = sys.exc_info()[2]
-            self.logger.exception('Raise Exception: %s', e.with_traceback(tb))
+            self.log_logger.print_exception_log(e.with_traceback(tb))
 
         try:
             # クラス名「cassetteRecruit__mainLL」が付与されている場合
@@ -267,13 +289,13 @@ class Scraping(object):
                 self.contents.append(_ll_application_details)
         except Exception as e:
             tb = sys.exc_info()[2]
-            self.logger.exception('Raise Exception: %s', e.with_traceback(tb))
+            self.log_logger.print_exception_log(e.with_traceback(tb))
 
         return self.contents
 
     def transition_page(self):
         if self.number_of_pages == 1:
-            self.logger.log(20, 'getting information...')
+            self.log_logger.print_info_log('getting information...')
             print('情報を取得中です・・・')
 
             self.check_class_name()
@@ -284,7 +306,7 @@ class Scraping(object):
                 self.url = f'https://tenshoku.mynavi.jp/list/kw{self.elem_keyword}/pg{page}/?jobsearchType=4&searchType=8'
                 self.browser.get(self.url)
 
-                self.logger.log(20, f'getting information for page {page} now...')
+                self.log_logger.print_info_log(f'getting information for page {page} now...')
                 print(f'{page}ページ目の情報を取得中です・・・')
 
                 self.check_class_name()
@@ -310,7 +332,7 @@ class Scraping(object):
         os.kill(self.browser.service.process.pid, signal.SIGTERM)
 
     def __del__(self):
-        self.logger.log(20, 'done')
+        self.log_logger.print_info_log('done')
         print('\n完了しました。')
 
 
