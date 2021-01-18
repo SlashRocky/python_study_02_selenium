@@ -45,6 +45,11 @@ class LogLogger(object):
         self.logger.exception(text)
 
 
+class LaunchBrowser(object):
+    def __init__(self):
+        self.driver = webdriver.Chrome()
+
+
 class Scraping(object):
     def __init__(self):
 
@@ -55,16 +60,15 @@ class Scraping(object):
         self.log_logger.print_info_log('booting...')
         print('\n起動しています・・・')
 
+        self.launch_browser = LaunchBrowser()
+
         # 全ての「会社名」を格納するリスト：company_names
         self.company_names = []
         # 全ての会社の募集要項の詳細情報を格納するリスト：contents
         self.contents = []
 
-    def launch_chrome(self):
-        self.browser = webdriver.Chrome()
-
     def access_site(self):
-        self.browser.get('https://tenshoku.mynavi.jp/search/')
+        self.launch_browser.driver.get('https://tenshoku.mynavi.jp/search/')
 
         self.log_logger.print_info_log('loading...')
         print('\nデータをロード中です・・・')
@@ -73,8 +77,8 @@ class Scraping(object):
         sleep(5)
 
         # ポップアップがあれば閉じる
-        if self.browser.find_element_by_class_name('karte-close'):
-            self.browser.find_element_by_class_name('karte-close').click()
+        if self.launch_browser.driver.find_element_by_class_name('karte-close'):
+            self.launch_browser.driver.find_element_by_class_name('karte-close').click()
         else:
             pass
 
@@ -86,7 +90,7 @@ class Scraping(object):
         while True:
             try:
                 # キーワード欄にキーワードを入力
-                self.elem_keyword_box = self.browser.find_element_by_name('srFreeSearchKeyword')
+                self.elem_keyword_box = self.launch_browser.driver.find_element_by_name('srFreeSearchKeyword')
                 self.elem_keyword_box.clear()
 
                 self.log_logger.print_info_log('enter the keywords you are interested in...')
@@ -95,13 +99,13 @@ class Scraping(object):
                 self.elem_keyword_box.send_keys(self.elem_keyword)
 
                 # 検索ボタンをクリック
-                if self.browser.find_elements_by_class_name('btnPrimaryL'):
-                    self.browser.find_element_by_class_name('btnPrimaryL').click()
+                if self.launch_browser.driver.find_elements_by_class_name('btnPrimaryL'):
+                    self.launch_browser.driver.find_element_by_class_name('btnPrimaryL').click()
                 else:
-                    self.browser.find_element_by_class_name('btnSearch').click()
+                    self.launch_browser.driver.find_element_by_class_name('btnSearch').click()
 
                 # 何件あるかカウント
-                self.number_of_cases = int(self.browser.find_element_by_class_name('js__searchRecruit--count').text)
+                self.number_of_cases = int(self.launch_browser.driver.find_element_by_class_name('js__searchRecruit--count').text)
 
                 self.log_logger.print_info_log(f'{self.number_of_cases} jobs were found')
                 print(f'\n{self.number_of_cases}件の求人情報がヒットしました。')
@@ -136,32 +140,32 @@ class Scraping(object):
         案件により、募集内容詳細が格納されているタグに付与されているクラス名が違うので、それぞれいくつあるか確認する関数
         """
         # クラス名「cassetteRecruitRecommend__main」が付与されている案件の「仕事内容」、「対象となる方」、「勤務地」、「給与」の要素
-        self.elems_recommend_application_details = self.browser.find_elements_by_class_name('cassetteRecruitRecommend__main')
+        self.elems_recommend_application_details = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruitRecommend__main')
 
         # クラス名「cassetteRecruit__main」が付与されている案件の「仕事内容」、「対象となる方」、「勤務地」、「給与」の要素
-        self.elems_application_details = self.browser.find_elements_by_class_name('cassetteRecruit__main')
+        self.elems_application_details = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruit__main')
 
         # クラス名「cassetteRecruit__mainM」が付与されている案件の「仕事内容」、「対象となる方」、「勤務地」、「給与」の要素
-        self.elems_m_application_details = self.browser.find_elements_by_class_name('cassetteRecruit__mainM')
+        self.elems_m_application_details = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruit__mainM')
 
         # クラス名「cassetteRecruit__mainL」が付与されている案件の「仕事内容」、「対象となる方」、「勤務地」、「給与」の要素
-        self.elems_l_application_details = self.browser.find_elements_by_class_name('cassetteRecruit__mainL')
+        self.elems_l_application_details = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruit__mainL')
 
         # クラス名「cassetteRecruit__mainLL」が付与されている案件の「仕事内容」、「対象となる方」、「勤務地」、「給与」の要素
-        self.elems_ll_application_details = self.browser.find_elements_by_class_name('cassetteRecruit__mainLL')
+        self.elems_ll_application_details = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruit__mainLL')
 
     def extract_company_names(self):
 
         # 「注目」の案件の会社名
-        if self.browser.find_elements_by_class_name('cassetteRecruitRecommend__name'):
-            self.elems_recommend_company_name = self.browser.find_elements_by_class_name('cassetteRecruitRecommend__name')
+        if self.launch_browser.driver.find_elements_by_class_name('cassetteRecruitRecommend__name'):
+            self.elems_recommend_company_name = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruitRecommend__name')
 
             for elem_recommend_company_name in self.elems_recommend_company_name:
                 self.recommend_company_name = elem_recommend_company_name.text.split("|")[0].strip()
                 self.company_names.append(self.recommend_company_name)
 
         # 「注目」ではない案件の会社名
-        self.elems_company_name = self.browser.find_elements_by_class_name('cassetteRecruit__name')
+        self.elems_company_name = self.launch_browser.driver.find_elements_by_class_name('cassetteRecruit__name')
 
         for elem_company_name in self.elems_company_name:
             self.company_name = elem_company_name.text.split("|")[0].strip()
@@ -304,7 +308,7 @@ class Scraping(object):
         else:
             for page in range(1, self.number_of_pages + 1):
                 self.url = f'https://tenshoku.mynavi.jp/list/kw{self.elem_keyword}/pg{page}/?jobsearchType=4&searchType=8'
-                self.browser.get(self.url)
+                self.launch_browser.driver.get(self.url)
 
                 self.log_logger.print_info_log(f'getting information for page {page} now...')
                 print(f'{page}ページ目の情報を取得中です・・・')
@@ -329,7 +333,7 @@ class Scraping(object):
         self.df.to_csv(f'./results/mynavi_search_results_by_{self.elem_keyword}_{self.time}.csv', index=False)
 
     def send_exit_signal(self):
-        os.kill(self.browser.service.process.pid, signal.SIGTERM)
+        os.kill(self.launch_browser.driver.service.process.pid, signal.SIGTERM)
 
     def __del__(self):
         self.log_logger.print_info_log('done')
@@ -339,7 +343,6 @@ class Scraping(object):
 if __name__ == '__main__':
     scraping = Scraping()
     try:
-        scraping.launch_chrome()
         scraping.access_site()
         scraping.search_by_keyword()
         scraping.transition_page()
